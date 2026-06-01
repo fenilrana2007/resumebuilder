@@ -16,7 +16,7 @@ export function PDFExportButton({ run }: Props) {
   const [isConfirmed, setIsConfirmed] = useState(false);
 
   const canExport = run?.status === "tailored" || run?.status === "exported";
-  
+
   // Calculate unconfirmed bullets
   const getUnconfirmedBullets = () => {
     if (!run || !run.tailoredResume) return [];
@@ -50,7 +50,7 @@ export function PDFExportButton({ run }: Props) {
 
   const handleExport = async (type: "comparison" | "tailored") => {
     if (!run || !canExport) return;
-    
+
     if (hasUnconfirmedBullets) {
       setError("Please confirm the accuracy of all low-confidence/flagged bullets before exporting.");
       return;
@@ -101,8 +101,14 @@ export function PDFExportButton({ run }: Props) {
           </p>
           <ul className="list-disc pl-5 text-xs text-amber-600 space-y-1">
             {unconfirmedBullets.map((b, idx) => (
+              // <li key={idx}>
+              //   <strong>{b.title} at {b.company}</strong> (Bullet #{b.index}): <span className="italic">"{b.text.slice(0, 80)}..."</span>
+              // </li>
               <li key={idx}>
-                <strong>{b.title} at {b.company}</strong> (Bullet #{b.index}): <span className="italic">"{b.text.slice(0, 80)}..."</span>
+                <strong>{b.title} at {b.company}</strong> (Bullet #{b.index}):{" "}
+                <span className="italic">
+                  &quot;{b.text.slice(0, 80)}...&quot;
+                </span>
               </li>
             ))}
           </ul>
@@ -142,7 +148,7 @@ export function PDFExportButton({ run }: Props) {
         >
           {exporting === "comparison" ? "Generating report..." : "Export comparison PDF"}
         </Button>
-        
+
         <Button
           type="button"
           variant="outline"
