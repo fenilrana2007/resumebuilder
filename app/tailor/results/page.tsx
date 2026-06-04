@@ -55,7 +55,8 @@ export default function ResultsPage() {
     setTailoring(true);
 
     try {
-      const { run: updated, usedMock } = await apiTailor(run.id);
+      // Pass run as runData so the server can restore state in stateless/serverless environments
+      const { run: updated, usedMock } = await apiTailor(run.id, run);
       saveRun(updated);
       saveRunMockFlag(updated.id, usedMock);
       setShowMockBanner(usedMock);

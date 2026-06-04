@@ -65,7 +65,8 @@ export function PDFExportButton({ run }: Props) {
     setError(undefined);
 
     try {
-      const { blob, filename } = await apiExport(run.id, type, run.userConfirmations);
+      // Pass run as runData so the server can restore state in stateless/serverless environments
+      const { blob, filename } = await apiExport(run.id, type, run.userConfirmations, run);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;

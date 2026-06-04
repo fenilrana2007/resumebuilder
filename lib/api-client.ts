@@ -27,11 +27,12 @@ export async function apiAnalyze(resumeText: string, jdText: string) {
   return parseResponse<{ run: TailoringRun; usedMock: boolean }>(res);
 }
 
-export async function apiTailor(runId: string) {
+export async function apiTailor(runId: string, runData?: TailoringRun) {
   const res = await fetch("/api/tailor", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ runId }),
+    // Pass runData so the server can restore state in stateless/serverless environments
+    body: JSON.stringify({ runId, runData }),
   });
   return parseResponse<{ run: TailoringRun; usedMock: boolean }>(res);
 }
@@ -44,12 +45,14 @@ export async function apiGetRun(runId: string) {
 export async function apiExport(
   runId: string,
   type: "comparison" | "tailored" | "both",
-  userConfirmations?: Record<string, boolean>
+  userConfirmations?: Record<string, boolean>,
+  runData?: TailoringRun
 ): Promise<{ blob: Blob; filename: string }> {
   const res = await fetch("/api/export", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ runId, type, userConfirmations }),
+    // Pass runData so the server can restore state in stateless/serverless environments
+    body: JSON.stringify({ runId, type, userConfirmations, runData }),
   });
   if (!res.ok) {
     const data = (await res.json()) as { error?: string };
@@ -61,4 +64,3 @@ export async function apiExport(
   const filename = filenameMatch?.[1] ?? `export-${type}.pdf`;
   return { blob, filename };
 }
-

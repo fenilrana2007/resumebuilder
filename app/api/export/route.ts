@@ -1,16 +1,20 @@
 import { NextResponse } from "next/server";
 import { getServerRun, saveServerRun } from "@/lib/run-store";
 import { generateComparisonPdf, generateTailoredResumePdf } from "@/lib/pdf/generator";
+import { tailoringRunSchema } from "@/lib/schemas";
 
 export const maxDuration = 120;
 
 export async function POST(request: Request) {
   try {
-    const { runId, type, userConfirmations } = await request.json() as {
+    const body = await request.json() as {
       runId: string;
       type: "comparison" | "tailored" | "both";
       userConfirmations?: Record<string, boolean>;
+      runData?: unknown; // full run object passed from client for stateless/serverless environments
     };
+
+    const { runId, type, userConfirmations } = body;
 
     if (!runId) {
       return NextResponse.json({ error: "runId is required" }, { status: 400 });
@@ -20,9 +24,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid export type" }, { status: 400 });
     }
 
-    const run = getServerRun(runId);
+    // Try in-memory store first (works in dev), fall back to client-provided run data (for serverless)
+    let run = getServerRun(runId);
+    if (!run && body.runData) {
+      try {
+        run = tailoringRunSchema.parse(body.runData);
+      } catch {
+        return NextResponse.json({ error: "Invalid run data provided" }, { status: 400 });
+      }
+    }
+
     if (!run) {
-      return NextResponse.json({ error: "Run not found" }, { status: 404 });
+      return NextResponse.json({ error: "Run not found. Please re-analyze your resume." }, { status: 404 });
     }
 
     if (run.status !== "tailored" && run.status !== "exported") {
@@ -54,7 +67,6 @@ export async function POST(request: Request) {
       }
     }
 
-
     let pdfBuffer: Buffer;
     let filename: string;
 
@@ -74,7 +86,7 @@ export async function POST(request: Request) {
       filename = `comparison-report-${companySlug}-${jobSlug}.pdf`;
     }
 
-    // Mark status as exported
+    // Mark status as exported (best effort, may not persist in serverless)
     run.status = "exported";
     saveServerRun(run);
 
