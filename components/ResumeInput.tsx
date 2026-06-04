@@ -74,10 +74,19 @@ export function ResumeInput({ value, onChange, error }: Props) {
       clearInterval(progressTimer);
       setUploadProgress(100);
 
-      const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error ?? "Failed to extract text from file.");
+        const text = await res.text();
+        let errMsg = "Failed to extract text from file.";
+        try {
+          const data = JSON.parse(text);
+          errMsg = data.error ?? errMsg;
+        } catch {
+          errMsg = `Server error (${res.status}): ${res.statusText || "Internal Server Error"}`;
+        }
+        throw new Error(errMsg);
       }
+
+      const data = await res.json();
 
       // Hide progress bar and set extracted text (EC-P5-20)
       setUploadProgress(null);

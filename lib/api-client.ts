@@ -11,11 +11,21 @@ export class ApiError extends Error {
 }
 
 async function parseResponse<T>(res: Response): Promise<T> {
-  const data = (await res.json()) as T & { error?: string };
-  if (!res.ok) {
-    throw new ApiError(data.error ?? "Request failed", res.status);
+  const text = await res.text();
+  let data: any;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    if (!res.ok) {
+      throw new ApiError(`Server error (${res.status}): ${res.statusText || "Internal Server Error"}`, res.status);
+    }
+    throw new ApiError("Invalid JSON response from server", res.status);
   }
-  return data;
+
+  if (!res.ok) {
+    throw new ApiError(data?.error ?? "Request failed", res.status);
+  }
+  return data as T;
 }
 
 export async function apiAnalyze(resumeText: string, jdText: string) {
@@ -55,8 +65,15 @@ export async function apiExport(
     body: JSON.stringify({ runId, type, userConfirmations, runData }),
   });
   if (!res.ok) {
-    const data = (await res.json()) as { error?: string };
-    throw new ApiError(data.error ?? "Export failed", res.status);
+    const text = await res.text();
+    let errMsg = "Export failed";
+    try {
+      const data = JSON.parse(text);
+      errMsg = data.error ?? errMsg;
+    } catch {
+      errMsg = `Server error (${res.status}): ${res.statusText || "Internal Server Error"}`;
+    }
+    throw new ApiError(errMsg, res.status);
   }
   const blob = await res.blob();
   const contentDisposition = res.headers.get("Content-Disposition");
