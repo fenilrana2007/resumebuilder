@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import mammoth from "mammoth";
-import pdf from "pdf-parse";
+// @ts-expect-error - pdf-parse/lib/pdf-parse.js does not have type definitions in @types/pdf-parse
+import pdf from "pdf-parse/lib/pdf-parse.js";
 
 export const maxDuration = 60;
 
